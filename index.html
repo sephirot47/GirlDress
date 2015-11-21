@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>PIXI Concentration</title>
+		<style>
+			body {
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+		<script src="pixi.dev.js"></script>
+	</head>
+	<body>
+		<script>
+			///////////////////// Button class //////////////////
+			function Button( idle, over, pressed) //Paths to images
+			{
+			    this.idleTex    = PIXI.Texture.fromImage(idle);
+			    this.overTex    = PIXI.Texture.fromImage(over);
+			    this.pressedTex = PIXI.Texture.fromImage(pressed);
+			   
+			    this.sprite = new PIXI.Sprite(this.idleTex);
+			    this.sprite.buttonMode  = true;
+			    this.sprite.interactive = true;
+			    this.sprite.texture = this.idleTex;
+			    
+			    this.idle = function() {}; this.over = function() {}; this.pressed = function() {};
+			    
+			    this.sprite._button = this;
+			    this.sprite.mouseout = this._idle;
+			    this.sprite.mouseup = this._over;
+			    this.sprite.mouseover = this._over;
+			    this.sprite.mousedown = this._pressed;
+			}
+			
+			Button.prototype._idle = function() { this.texture = this._button.idleTex; this._button.idle(); };
+			Button.prototype._over = function() { this.texture = this._button.overTex; this._button.over(); };
+			Button.prototype._pressed = function() { this.texture = this._button.pressedTex; this._button.pressed(); };
+			//////////////////////////////////////////////////7
+			
+			
+			var girlBodyTexture = PIXI.Texture.fromImage("Body0.jpg");
+			var girlRect = new PIXI.Rectangle(0, 0, girlBodyTexture.width, girlBodyTexture.height);
+			var tabsRect = new PIXI.Rectangle(girlRect.x + girlRect.width, girlRect.y, 300, girlRect.height);
+			
+			var renderer = PIXI.autoDetectRenderer(girlRect.width + tabsRect.width, girlRect.height);
+			document.body.appendChild(renderer.view);
+			
+			var stage = new PIXI.Stage(0x6699FF, true);
+			
+			//Create girlBody
+			var girlBody = new PIXI.Sprite(girlBodyTexture);
+			girlBody.position.x = 0;
+			girlBody.position.y = 0;
+			stage.addChild(girlBody);
+			//
+			
+			//Tabs stuff ////////////
+			  var tabs = 
+			  [
+			    {
+			      title: "Hairs",
+			      buttons: [],
+			      colors: [0x0000FF, 0x00FF00, 0xFF0000, 0xFFFF00]
+			    },
+			    {
+			      title: "Eyes",
+			      buttons: [],
+			      colors: [0x0000FF, 0xFFFFFF]
+			    },
+			    {
+			      title: "Dresses",
+			      buttons: [],
+			      colors: [0x00FFFF, 0x00FF00, 0xFF0000, 0xFFFF00]
+			    },
+			    {
+			      title: "Shoes",
+			      buttons: [],
+			      colors: [0x0000FF, 0x000000, 0xFF0000, 0xFFFF00]
+			    }
+			    
+			  ];
+			  var currentTab = 0;
+			  
+			  var tabTitleText = new PIXI.Text("", {font:"50px Arial", fill:"white"});
+			  tabTitleText.x = tabsRect.x;
+			  tabTitleText.y = tabsRect.y;
+			  tabTitleText.anchor.x = 0.5;
+			  tabTitleText.x = tabsRect.x + tabsRect.width / 2;
+			  stage.addChild(tabTitleText);
+			  
+			  //Arrow left and right buttons
+			  var leftButton = new Button("btnLeft.png", "btnLeft.png", "btnLeft.png");
+			  leftButton.sprite.x = tabsRect.x;
+			  leftButton.sprite.y = tabsRect.y + tabsRect.height - leftButton.sprite.height;
+			  leftButton.pressed = function () { --currentTab; changeTab(currentTab); }
+			  stage.addChild(leftButton.sprite);
+			  
+			  var rightButton = new Button("btnRight.png", "btnRight.png", "btnRight.png");
+			  rightButton.sprite.x = tabsRect.x + tabsRect.width  - rightButton.sprite.width;
+			  rightButton.sprite.y = tabsRect.y + tabsRect.height - rightButton.sprite.height;
+			  rightButton.pressed = function () { ++currentTab; changeTab(currentTab); }
+			  stage.addChild(rightButton.sprite);
+			 
+			  var lastColorButtons = [];
+			  changeTab(currentTab);
+			  function changeTab( tab_i )
+			  {
+			    rightButton.sprite.visible = (tab_i < tabs.length-1);
+			    leftButton.sprite.visible = (tab_i > 0);
+			    if(tab_i >= 0 && tab_i < tabs.length) 
+			    {
+			      tabTitleText.setText(tabs[tab_i].title);
+			      renderer.render(stage);
+			    }
+			    putColorButtons(tab_i);
+			  }
+			  
+			  function putColorButtons(tab_i)
+			  {
+			    //Remove lastColorButtons
+			    lastColorButtons.forEach( function(button) { stage.removeChild(button.sprite); } );
+			    lastColorButtons.length = 0;
+			    
+			    //Put new color buttons
+			    var i = 0;
+			    tabs[tab_i].colors.forEach( function(color)
+			      {
+				 var btn = new Button("btnColor.png", "btnColor.png", "btnColor.png");
+				 btn.sprite.x = tabsRect.x + i * btn.sprite.width;
+				 btn.sprite.y = tabsRect.y + tabsRect.height - btn.sprite.height - 80;
+				 btn.sprite.tint = color;
+				 
+				 lastColorButtons.push(btn);
+				 stage.addChild(btn.sprite);
+				 ++i;
+			      }
+			    );
+			  }
+			  
+			///////////////////////////////
+			 
+			////////////////////////
+			 
+			update();
+			function update(){
+			    requestAnimFrame(update);
+			    renderer.render(stage);
+			};
+			
+			animate();
+			function animate() 
+			{
+			    requestAnimationFrame(animate);
+			    renderer.render(stage);
+			}
+			
+		</script>
+	</body>
+</html>
