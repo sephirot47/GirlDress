@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 	<head>
-		<title>PIXI Concentration</title>
+		<title>Girl Dress</title>
 		<style>
 			body {
 				margin: 0;
@@ -10,7 +10,9 @@
 		</style>
 		<script src="pixi.dev.js"></script>
 	</head>
-	<body>
+	<body onload = "changeTab(0);">
+		<canvas id="game-canvas">
+		</canvas>
 		<script>
 			///////////////////// Button class //////////////////
 			function Button( idle, over, pressed) //Paths to images
@@ -38,13 +40,15 @@
 			Button.prototype._pressed = function() { this.texture = this._button.pressedTex; this._button.pressed(); };
 			//////////////////////////////////////////////////7
 			
-			
+			var currentTab = 0;
 			var girlBodyTexture = PIXI.Texture.fromImage("Body0.jpg");
 			var girlRect = new PIXI.Rectangle(0, 0, girlBodyTexture.width, girlBodyTexture.height);
 			var tabsRect = new PIXI.Rectangle(girlRect.x + girlRect.width, girlRect.y, 300, girlRect.height);
-			
-			var renderer = PIXI.autoDetectRenderer(girlRect.width + tabsRect.width, girlRect.height);
-			document.body.appendChild(renderer.view);
+			  
+			var renderer = PIXI.autoDetectRenderer(girlRect.width + tabsRect.width,
+								girlRect.height, 
+								document.getElementById("game-canvas"));
+			//document.body.appendChild(renderer.view);
 			
 			var stage = new PIXI.Stage(0x6699FF, true);
 			
@@ -60,27 +64,37 @@
 			  [
 			    {
 			      title: "Hairs",
+			      filePrefix: "hair", //hair0.png, hair1.png...
 			      buttons: [],
-			      colors: [0x0000FF, 0x00FF00, 0xFF0000, 0xFFFF00]
+			      colors: [0x0000FF, 0x00FF00, 0xFF0000, 0xFFFF00],
+			      pinPoint: {x:170 , y:10},
+			      currentPutAcc: undefined
 			    },
 			    {
 			      title: "Eyes",
+			      filePrefix: "eyes",
 			      buttons: [],
-			      colors: [0x0000FF, 0xFFFFFF]
+			      colors: [0x0000FF, 0xFFFFFF],
+			      pinPoint: {x:20 , y:20},
+			      currentPutAcc: undefined
 			    },
 			    {
 			      title: "Dresses",
+			      filePrefix: "dress",
 			      buttons: [],
-			      colors: [0x00FFFF, 0x00FF00, 0xFF0000, 0xFFFF00]
+			      colors: [0x00FFFF, 0x00FF00, 0xFF0000, 0xFFFF00],
+			      pinPoint: {x:120 , y:80},
+			      currentPutAcc: undefined
 			    },
 			    {
 			      title: "Shoes",
+			      filePrefix: "shoes",
 			      buttons: [],
-			      colors: [0x0000FF, 0x000000, 0xFF0000, 0xFFFF00]
+			      colors: [0x0000FF, 0x000000, 0xFF0000, 0xFFFF00],
+			      pinPoint: {x:20 , y:60},
+			      currentPutAcc: undefined
 			    }
-			    
 			  ];
-			  var currentTab = 0;
 			  
 			  var tabTitleText = new PIXI.Text("", {font:"50px Arial", fill:"white"});
 			  tabTitleText.x = tabsRect.x;
@@ -101,41 +115,135 @@
 			  rightButton.sprite.y = tabsRect.y + tabsRect.height - rightButton.sprite.height;
 			  rightButton.pressed = function () { ++currentTab; changeTab(currentTab); }
 			  stage.addChild(rightButton.sprite);
-			 
-			  var lastColorButtons = [];
+			
+			  var lastColorButtons = []; //Color buttons Container
+			  var colorButtonsContainer = new PIXI.DisplayObjectContainer(); 
+			  colorButtonsContainer.x = tabsRect.x + tabsRect.width / 2;
+			  colorButtonsContainer.y = tabsRect.y + tabsRect.height - rightButton.sprite.height * 1.1;
+			  stage.addChild(colorButtonsContainer);
+			  
+			  var lastAccessoryButtons = []; //Accessory buttons container
+			  var accButtonsContainer = new PIXI.DisplayObjectContainer(); 
+			  accButtonsContainer.x = tabsRect.x + tabsRect.width / 2;
+			  accButtonsContainer.y = tabsRect.y + 50;
+			  stage.addChild(accButtonsContainer);
+			  
 			  changeTab(currentTab);
+			    
+			  //////////////////////////////////////////
+			  
+			  function clearCurrentTab()
+			  {
+			    //Remove lastColorButtons
+			    lastColorButtons.forEach( function(button) { colorButtonsContainer.removeChild(button.sprite); } );
+			    lastColorButtons.length = 0;
+			    
+			    //Remove lastAccessoryButtons
+			    lastAccessoryButtons.forEach( function(button) { accButtonsContainer.removeChild(button.sprite); } );
+			    lastAccessoryButtons.length = 0;
+			  }
+			  
 			  function changeTab( tab_i )
 			  {
+			    clearCurrentTab();
+			    
+			    //Change arrows buttons visibility
 			    rightButton.sprite.visible = (tab_i < tabs.length-1);
 			    leftButton.sprite.visible = (tab_i > 0);
+			    
+			    //Update tab
 			    if(tab_i >= 0 && tab_i < tabs.length) 
 			    {
-			      tabTitleText.setText(tabs[tab_i].title);
-			      renderer.render(stage);
+			      tabTitleText.setText(tabs[tab_i].title); //Update text
+			      putColorButtons(tab_i); //Put tab's color buttons
+			      putAccessories(tab_i); //Load tab accessories
+			      
+			      renderer.render(stage); //Render everything
 			    }
-			    putColorButtons(tab_i);
+			    
+			    tintCurrentTabAccessories(tabs[tab_i].colors[0]);
+			  }
+			  
+			  function tintCurrentTabAccessories(color)
+			  {			    
+			    lastAccessoryButtons.forEach( function(button) 
+			      { 
+				button.sprite.tint = color; 
+			      } 
+			    );
 			  }
 			  
 			  function putColorButtons(tab_i)
-			  {
-			    //Remove lastColorButtons
-			    lastColorButtons.forEach( function(button) { stage.removeChild(button.sprite); } );
-			    lastColorButtons.length = 0;
-			    
+			  {			
+			    var maxHeight = 0;
+			    var totalWidth = 0;
 			    //Put new color buttons
-			    var i = 0;
 			    tabs[tab_i].colors.forEach( function(color)
 			      {
-				 var btn = new Button("btnColor.png", "btnColor.png", "btnColor.png");
-				 btn.sprite.x = tabsRect.x + i * btn.sprite.width;
-				 btn.sprite.y = tabsRect.y + tabsRect.height - btn.sprite.height - 80;
-				 btn.sprite.tint = color;
+			         var xMargin = 5;
+				 var btnColor = new Button("btnColor.png", "btnColor.png", "btnColor.png");
+				 btnColor.sprite.x = (lastColorButtons.length) * (btnColor.sprite.width + xMargin);
+				 btnColor.sprite.y = 0;
+				 btnColor.sprite.tint = color;
 				 
-				 lastColorButtons.push(btn);
-				 stage.addChild(btn.sprite);
-				 ++i;
+				 var color = btnColor.sprite.tint;
+				 btnColor.pressed =  function() { tintCurrentTabAccessories(color); };
+				 
+				 lastColorButtons.push(btnColor);
+				 colorButtonsContainer.addChild(btnColor.sprite);
+				 totalWidth += btnColor.sprite.width;
+				 maxHeight = Math.max(maxHeight, btnColor.sprite.height);
 			      }
 			    );
+			      
+			    //Center colorButtonsContainer
+			    colorButtonsContainer.x = tabsRect.x + tabsRect.width / 2 - totalWidth / 2;
+			    colorButtonsContainer.y = tabsRect.y + tabsRect.height - maxHeight - rightButton.sprite.height * 1.2;
+			  }
+			  
+			  function putAccessories(tab_i)
+			  {
+			      var xMargin = 5;
+			      var maxHeight = 0;
+			      var totalWidth = 0;
+			      var filePrefix = tabs[tab_i].filePrefix;
+			      var texPath = filePrefix + (lastAccessoryButtons.length) + ".png";
+			      var accessoryTex = PIXI.Texture.fromImage(texPath);
+			      while(accessoryTex.width > 0) //While next file exists 
+			      {
+				var btnAcc = new Button(texPath, texPath, texPath);
+				if(lastAccessoryButtons.length == 0) btnAcc.sprite.position.x = 0;
+				else { 
+				  var lastSprite = lastAccessoryButtons[lastAccessoryButtons.length-1].sprite; 
+				  btnAcc.sprite.position.x = lastAccessoryButtons.length * (lastSprite.width + xMargin);
+				}
+				btnAcc.sprite.position.y = 0;
+				lastAccessoryButtons.push(btnAcc);
+				accButtonsContainer.addChild(btnAcc.sprite);
+				totalWidth += btnAcc.sprite.width + xMargin;
+				maxHeight = Math.max(maxHeight, btnAcc.sprite.height);
+				
+				//Add functionality to this button
+				btnAcc.texxx = btnAcc.sprite.texture;
+				btnAcc.pressed = function()
+				{
+				  var acc =  new PIXI.Sprite(this.texxx);
+				  acc.x = tabs[currentTab].pinPoint.x;
+				  acc.y = tabs[currentTab].pinPoint.y;
+				  acc.tint = btnAcc.sprite.tint;
+				  stage.addChild(acc);
+				  renderer.render(stage);
+				};
+				
+				//Try to load next acc texture
+			        texPath = filePrefix + (lastAccessoryButtons.length) + ".png";
+			        accessoryTex = undefined;
+			        accessoryTex = PIXI.Texture.fromImage(texPath);	
+			      }
+			      
+			      //Center accButtonsContainer
+			      accButtonsContainer.x = tabsRect.x + tabsRect.width / 2 - totalWidth / 2;
+			      accButtonsContainer.y = tabsRect.y + tabTitleText.height * 1.1;
 			  }
 			  
 			///////////////////////////////
@@ -143,17 +251,11 @@
 			////////////////////////
 			 
 			update();
-			function update(){
+			function update()
+			{
 			    requestAnimFrame(update);
 			    renderer.render(stage);
 			};
-			
-			animate();
-			function animate() 
-			{
-			    requestAnimationFrame(animate);
-			    renderer.render(stage);
-			}
 			
 		</script>
 	</body>
